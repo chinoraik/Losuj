@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Losuj!</title>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generátor náhodného čísla</h1>
+    <button id="generateBtn" onclick="startRandom()">Losuj!</button>
+    <div id="result"></div>
+
+    <script>
+        // Firebase konfigurace
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQUmhoGLk8y7b2c7xTXoAhdsKyycVVutk",
+            authDomain: "generator-1a774.firebaseapp.com",
+            databaseURL: "https://generator-1a774-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "generator-1a774",
+            storageBucket: "generator-1a774.firebasestorage.app",
+            messagingSenderId: "615580881065",
+            appId: "1:615580881065:web:1fe90ea65a27c7587199b8"
+        };
+
+        // Inicializace Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Test připojení k Firebase
+        firebase.database().ref().once('value')
+            .then(() => alert("Firebase připojení úspěšné!"))
+            .catch((error) => alert("Chyba při připojení k Firebase: " + error.message));
+
+        // Získání tokenu z URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+
+        // Ověření tokenu
+async function verifyToken(token) {
+    alert("Ověřuji token: " + token); // Zpráva s aktuálním tokenem
+    const tokenRef = database.ref(`tokens/${token}`);
+    const snapshot = await tokenRef.get();
+
+    if (!snapshot.exists()) {
+        alert("Token neexistuje v databázi!");
+        return null;
+    }
+    if (snapshot.val().status !== "valid") {
+        alert("Token není platný nebo už byl použit!");
+        return null;
+    }
+
+    alert("Token ověřen úspěšně!"); // Token je platný
+    return tokenRef;
+}
+
+        // Funkce animace a generování čísla
+        let interval;
+        async function startRandom() {
+            alert("Tlačítko bylo kliknuto!"); // Ladicí zpráva
+
+            const button = document.getElementById("generateBtn");
+            button.disabled = true; // Deaktivujeme tlačítko
+
+            alert("Spouštím ověření tokenu..."); // Zpráva před ověřením tokenu
+
+            const tokenRef = await verifyToken(token);
+            if (!tokenRef) {
+                alert("Token není platný nebo byl již použit!"); // Zpráva při neplatném tokenu
+                return;
+            }
+
+            alert("Token je platný. Spouštím animaci!"); // Zpráva při platném tokenu
+
+            const resultDiv = document.getElementById('result');
+            let currentNumber = 1;
+
+            // Rychlá animace čísel
+            clearInterval(interval);
+            interval = setInterval(() => {
+                currentNumber = Math.floor(Math.random() * 299) + 1;
+                resultDiv.textContent = `Losuje se: ${currentNumber}`;
+            }, 50);
+
+            // Po 3 sekundách zastavení animace
+            setTimeout(async () => {
+                clearInterval(interval);
+                const finalNumber = Math.floor(Math.random() * 299) + 1;
+
+                alert(`Finální číslo: ${finalNumber}`); // Zpráva s výsledkem
+
+                // Aktualizujeme databázi s výsledkem
+                await tokenRef.update({
+                    status: "used",
+                    number: finalNumber
+                });
+
+                resultDiv.textContent = `Vygenerované číslo: ${finalNumber}`;
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
