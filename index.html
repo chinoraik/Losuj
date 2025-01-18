@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor náhodného čísla</title>
+    <title>Firebase Test</title>
 </head>
 <body>
-    <h1>Generátor náhodného čísla</h1>
-    <button id="generateBtn">Losuj!</button>
-    <div id="result" style="font-size: 2em; margin-top: 20px;"></div>
-
+    <h1>Firebase Test</h1>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
 
     <script>
-        alert("Stránka se načetla."); // Test
+        alert("Spouštím Firebase test...");
 
         const firebaseConfig = {
             apiKey: "AIzaSyBQUmhoGLk8y7b2c7xTXoAhdsKyycVVutk",
@@ -26,16 +23,14 @@
             appId: "1:615580881065:web:1fe90ea65a27c7587199b8"
         };
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        firebase.database().ref().once('value')
-            .then(() => alert("Firebase připojení úspěšné!"))
-            .catch((error) => alert("Chyba při připojení k Firebase: " + error.message));
-
-        document.getElementById("generateBtn").addEventListener("click", () => {
-            alert("Tlačítko bylo kliknuto!");
-        });
+        // Inicializace Firebase
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            alert("Firebase připojení úspěšné!");
+        } catch (error) {
+            alert("Chyba při inicializaci Firebase: " + error.message);
+        }
     </script>
 </body>
 </html>
