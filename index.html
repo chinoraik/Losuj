@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase Test</title>
+    <title>Generátor náhodného čísla</title>
 </head>
 <body>
-    <h1>Firebase Test</h1>
+    <h1>Generátor náhodného čísla</h1>
+    <button id="generateBtn">Losuj!</button>
+    <h2 id="result" style="display: none;">Vylosované číslo: <span id="number"></span></h2>
+
+    <!-- Firebase knihovny -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        alert("Spouštím Firebase test...");
-
         // Firebase konfigurace
         const firebaseConfig = {
             apiKey: "AIzaSyBQUmhoGLk8y7b2c7xTXoAhdsKyycVVutk",
@@ -27,8 +29,49 @@
         // Inicializace Firebase
         try {
             firebase.initializeApp(firebaseConfig);
-            firebase.database();
+            const database = firebase.database();
             alert("Firebase připojení úspěšné!");
+
+            // Funkce losování
+            const generateRandomNumber = () => {
+                const min = 1;
+                const max = 299;
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            };
+
+            // Funkce pro uložení čísla do Firebase
+            const saveNumberToFirebase = (token, number) => {
+                const tokenRef = database.ref("Tokens/" + token);
+                tokenRef.update({
+                    status: "used",
+                    number: number
+                }).then(() => {
+                    alert("Číslo bylo úspěšně uloženo!");
+                }).catch((error) => {
+                    alert("Chyba při ukládání čísla: " + error.message);
+                });
+            };
+
+            // Ošetření tlačítka
+            document.getElementById("generateBtn").addEventListener("click", () => {
+                const token = "abc123"; // Token pro aktuálního uživatele
+                const tokenRef = database.ref("Tokens/" + token);
+
+                // Kontrola tokenu
+                tokenRef.once("value").then((snapshot) => {
+                    const tokenData = snapshot.val();
+                    if (tokenData && tokenData.status === "valid") {
+                        const randomNumber = generateRandomNumber();
+                        document.getElementById("number").innerText = randomNumber;
+                        document.getElementById("result").style.display = "block";
+                        saveNumberToFirebase(token, randomNumber);
+                    } else {
+                        alert("Token je neplatný nebo již byl použit.");
+                    }
+                }).catch((error) => {
+                    alert("Chyba při ověřování tokenu: " + error.message);
+                });
+            });
         } catch (error) {
             alert("Chyba při inicializaci Firebase: " + error.message);
         }
