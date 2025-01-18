@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generátor náhodného čísla</title>
+</head>
+<body>
+    <h1>Generátor náhodného čísla</h1>
+    <button id="generateBtn">Losuj!</button>
+    <div id="result" style="font-size: 2em; margin-top: 20px;"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
+
+    <script>
+        // Firebase konfigurace
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQUmhoGLk8y7b2c7xTXoAhdsKyycVVutk",
+            authDomain: "generator-1a774.firebaseapp.com",
+            databaseURL: "https://generator-1a774-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "generator-1a774",
+            storageBucket: "generator-1a774.appspot.com",
+            messagingSenderId: "615580881065",
+            appId: "1:615580881065:web:1fe90ea65a27c7587199b8"
+        };
+
+        // Inicializace Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Test připojení k Firebase
+        firebase.database().ref().once('value')
+            .then(() => alert("Firebase připojení úspěšné!"))
+            .catch((error) => alert("Chyba při připojení k Firebase: " + error.message));
+
+        // Funkce pro ověření tokenu
+        async function verifyToken(token) {
+            alert("Ověřuji token: " + token);
+            const tokenRef = database.ref(`tokens/${token}`);
+            const snapshot = await tokenRef.get();
+
+            if (!snapshot.exists()) {
+                alert("Token neexistuje v databázi!");
+                return null;
+            }
+            if (snapshot.val().status !== "valid") {
+                alert("Token není platný nebo už byl použit!");
+                return null;
+            }
+
+            alert("Token ověřen úspěšně!");
+            return tokenRef;
+        }
+
+        // Funkce pro spuštění generátoru
+        async function startRandom() {
+            alert("Tlačítko bylo kliknuto!");
+
+            const button = document.getElementById("generateBtn");
+            button.disabled = true;
+
+            alert("Spouštím ověření tokenu...");
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get("token");
+
+            if (!token) {
+                alert("Token není součástí URL!");
+                button.disabled = false;
+                return;
+            }
+
+            try {
+                const tokenRef = await verifyToken(token);
+                if (!tokenRef) {
+                    alert("Token není platný nebo byl již použit!");
+                    button.disabled = false;
+                    return;
+                }
+
+                // Animace generování čísla
+                const resultDiv = document.getElementById("result");
+                let currentNumber = 0;
+                const interval = setInterval(() => {
+                    currentNumber = Math.floor(Math.random() * 299) + 1;
+                    resultDiv.textContent = currentNumber;
+                }, 50);
+
+                setTimeout(async () => {
+                    clearInterval(interval);
+                    const finalNumber = currentNumber;
+                    resultDiv.textContent = `Vygenerované číslo: ${finalNumber}`;
+
+                    // Uložení čísla do databáze
+                    await tokenRef.update({ status: "used", number: finalNumber });
+                    alert("Číslo bylo vygenerováno a uloženo do databáze!");
+                }, 3000);
+
+            } catch (error) {
+                alert("Chyba během ověřování tokenu: " + error.message);
+                button.disabled = false;
+            }
+        }
+
+        // Event listener na tlačítko
+        document.getElementById("generateBtn").addEventListener("click", startRandom);
+    </script>
+</body>
+</html>
