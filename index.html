@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generátor náhodného čísla</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
 </head>
 <body>
   <h1>Generátor náhodného čísla</h1>
-  <input type="text" id="tokenInput" placeholder="Zadej token">
+  <input type="text" id="tokenInput" placeholder="Zadej token" />
   <button id="generateButton">Losuj!</button>
-  <div id="output"></div>
+  <p id="result"></p>
 
-  <script>
-    // Firebase konfigurace
+  <script type="module">
+    // Konfigurace Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyBQUmhoGLk8y7b2c7xTXoAhdsKyycVVutk",
       authDomain: "generator-1a774.firebaseapp.com",
@@ -26,45 +27,47 @@
     };
 
     // Inicializace Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
+    // Funkce pro losování
     const generateButton = document.getElementById("generateButton");
-    const outputDiv = document.getElementById("output");
+    const tokenInput = document.getElementById("tokenInput");
+    const result = document.getElementById("result");
 
     generateButton.addEventListener("click", async () => {
-      const token = document.getElementById("tokenInput").value.trim(); // Načti token od uživatele
+      const token = tokenInput.value.trim();
 
       if (!token) {
-        alert("Zadej platný token.");
+        alert("Prosím, zadej token!");
         return;
       }
 
       try {
-        const tokenRef = firebase.database().ref(`Tokens/${token}`);
-        const snapshot = await tokenRef.get();
+        const tokenRef = ref(database, `Tokens/${token}`);
+        const snapshot = await get(tokenRef);
 
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-
-          if (data.status === "Valid") {
-            // Vygenerování čísla
-            const randomNumber = Math.floor(Math.random() * 299) + 1;
-
-            // Aktualizace tokenu na "used"
-            await tokenRef.update({ status: "used", number: randomNumber });
-
-            // Zobrazení výsledku
-            outputDiv.textContent = `Vygenerované číslo: ${randomNumber}`;
-          } else {
-            alert("Token je neplatný nebo již byl použit.");
-          }
-        } else {
-          alert("Token neexistuje.");
+        if (!snapshot.exists()) {
+          alert("Token neexistuje nebo je neplatný.");
+          return;
         }
+
+        const tokenData = snapshot.val();
+        if (tokenData.status !== "Valid") {
+          alert("Token je neplatný nebo již byl použit.");
+          return;
+        }
+
+        // Generování náhodného čísla
+        const randomNumber = Math.floor(Math.random() * 299) + 1;
+
+        // Aktualizace databáze
+        await update(tokenRef, { status: "used", number: randomNumber });
+
+        // Zobrazení výsledku
+        result.textContent = `Vygenerované číslo: ${randomNumber}`;
       } catch (error) {
-        console.error("Chyba při ověřování tokenu:", error);
-        alert("Chyba při ověřování tokenu.");
+        alert(`Chyba: ${error.message}`);
       }
     });
   </script>
