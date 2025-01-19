@@ -4,39 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generátor náhodného čísla</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
 </head>
 <body>
     <h1>Generátor náhodného čísla</h1>
-    <button id="losuj">Losuj!</button>
-
-    <!-- Firebase SDKs -->
+    <button id="generateButton" onclick="handleGenerate()">Losuj!</button>
+    <p id="result"></p>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
-
     <script>
         // Firebase konfigurace
         const firebaseConfig = {
@@ -44,7 +18,7 @@
             authDomain: "generator-1a774.firebaseapp.com",
             databaseURL: "https://generator-1a774-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "generator-1a774",
-            storageBucket: "generator-1a774.firebasestorage.app",
+            storageBucket: "generator-1a774.appspot.com",
             messagingSenderId: "615580881065",
             appId: "1:615580881065:web:1fe90ea65a27c7587199b8"
         };
@@ -53,40 +27,38 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Funkce pro získání tokenu z URL
-        function getTokenFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('token');
-        }
+        alert("Firebase připojení úspěšné!");
 
-        // Funkce pro ověření tokenu a generování čísla
-        function verifyAndGenerate() {
-            const token = getTokenFromURL();
-
-            if (!token) {
-                alert('Token není v URL!');
-                return;
-            }
+        function handleGenerate() {
+            alert("Tlačítko bylo kliknuto!");
 
             // Ověření tokenu
-            firebase.database().ref(`Tokens/${token}`).once('value')
+            const token = "def456"; // Nahraď vlastním tokenem
+            const tokenRef = firebase.database().ref("Tokens/" + token);
+
+            tokenRef.once("value")
                 .then(snapshot => {
                     const data = snapshot.val();
 
-                    if (data && data.status === 'Valid') {
-                        alert(`Token je platný. Vylosované číslo: ${data.number}`);
-                        firebase.database().ref(`Tokens/${token}`).update({ status: 'used' });
+                    if (data && data.status === "Valid") {
+                        alert("Token je platný!");
+                        const randomNumber = Math.floor(Math.random() * 299) + 1;
+
+                        // Uložit číslo do databáze
+                        tokenRef.update({
+                            number: randomNumber,
+                            status: "used"
+                        });
+
+                        document.getElementById("result").textContent = `Vygenerované číslo: ${randomNumber}`;
                     } else {
-                        alert('Token je neplatný nebo již byl použit.');
+                        alert("Token je neplatný nebo již byl použit.");
                     }
                 })
                 .catch(error => {
-                    alert(`Chyba při ověřování tokenu: ${error.message}`);
+                    alert("Chyba při ověřování tokenu: " + error.message);
                 });
         }
-
-        // Přiřazení funkce k tlačítku
-        document.getElementById('losuj').addEventListener('click', verifyAndGenerate);
     </script>
 </body>
 </html>
