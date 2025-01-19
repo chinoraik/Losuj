@@ -1,18 +1,41 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generátor náhodného čísla</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <h1>Generátor náhodného čísla</h1>
-    <button id="generateBtn">Losuj!</button>
-    <h2 id="result" style="display: none;">Vylosované číslo: <span id="number"></span></h2>
+    <button id="losuj">Losuj!</button>
 
-    <!-- Firebase knihovny -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
 
     <script>
         // Firebase konfigurace
@@ -21,60 +44,49 @@
             authDomain: "generator-1a774.firebaseapp.com",
             databaseURL: "https://generator-1a774-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "generator-1a774",
-            storageBucket: "generator-1a774.appspot.com",
+            storageBucket: "generator-1a774.firebasestorage.app",
             messagingSenderId: "615580881065",
             appId: "1:615580881065:web:1fe90ea65a27c7587199b8"
         };
 
         // Inicializace Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
-            alert("Firebase připojení úspěšné!");
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-            // Funkce losování
-            const generateRandomNumber = () => {
-                const min = 1;
-                const max = 299;
-                return Math.floor(Math.random() * (max - min + 1)) + min;
-            };
-
-            // Funkce pro uložení čísla do Firebase
-            const saveNumberToFirebase = (token, number) => {
-                const tokenRef = database.ref("Tokens/" + token);
-                tokenRef.update({
-                    status: "used",
-                    number: number
-                }).then(() => {
-                    alert("Číslo bylo úspěšně uloženo!");
-                }).catch((error) => {
-                    alert("Chyba při ukládání čísla: " + error.message);
-                });
-            };
-
-            // Ošetření tlačítka
-            document.getElementById("generateBtn").addEventListener("click", () => {
-                const token = "abc123"; // Token pro aktuálního uživatele
-                const tokenRef = database.ref("Tokens/" + token);
-
-                // Kontrola tokenu
-                tokenRef.once("value").then((snapshot) => {
-                    const tokenData = snapshot.val();
-                    if (tokenData && tokenData.status === "valid") {
-                        const randomNumber = generateRandomNumber();
-                        document.getElementById("number").innerText = randomNumber;
-                        document.getElementById("result").style.display = "block";
-                        saveNumberToFirebase(token, randomNumber);
-                    } else {
-                        alert("Token je neplatný nebo již byl použit.");
-                    }
-                }).catch((error) => {
-                    alert("Chyba při ověřování tokenu: " + error.message);
-                });
-            });
-        } catch (error) {
-            alert("Chyba při inicializaci Firebase: " + error.message);
+        // Funkce pro získání tokenu z URL
+        function getTokenFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('token');
         }
+
+        // Funkce pro ověření tokenu a generování čísla
+        function verifyAndGenerate() {
+            const token = getTokenFromURL();
+
+            if (!token) {
+                alert('Token není v URL!');
+                return;
+            }
+
+            // Ověření tokenu
+            firebase.database().ref(`Tokens/${token}`).once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+
+                    if (data && data.status === 'Valid') {
+                        alert(`Token je platný. Vylosované číslo: ${data.number}`);
+                        firebase.database().ref(`Tokens/${token}`).update({ status: 'used' });
+                    } else {
+                        alert('Token je neplatný nebo již byl použit.');
+                    }
+                })
+                .catch(error => {
+                    alert(`Chyba při ověřování tokenu: ${error.message}`);
+                });
+        }
+
+        // Přiřazení funkce k tlačítku
+        document.getElementById('losuj').addEventListener('click', verifyAndGenerate);
     </script>
 </body>
 </html>
